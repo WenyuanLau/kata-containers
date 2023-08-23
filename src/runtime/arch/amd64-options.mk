@@ -26,3 +26,6 @@ ACRNCTLCMD := acrnctl
 
 # cloud-hypervisor binary name
 CLHCMD := cloud-hypervisor
+
+# stratovirt binary name
+STRATOVIRTCMD := stratovirt
