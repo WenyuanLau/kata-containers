@@ -46,6 +46,9 @@ const (
 	// ClhHypervisor is the ICH hypervisor.
 	ClhHypervisor HypervisorType = "clh"
 
+	// StratovirtHypervisor is the StratoVirt hypervisor.
+	StratovirtHypervisor HypervisorType = "stratovirt"
+
 	// DragonballHypervisor is the Dragonball hypervisor.
 	DragonballHypervisor HypervisorType = "dragonball"
 
@@ -254,6 +257,8 @@ func (hType *HypervisorType) String() string {
 		return string(AcrnHypervisor)
 	case ClhHypervisor:
 		return string(ClhHypervisor)
+	case StratovirtHypervisor:
+		return string(StratovirtHypervisor)
 	case MockHypervisor:
 		return string(MockHypervisor)
 	default:
