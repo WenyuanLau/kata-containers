@@ -105,6 +105,12 @@ cache_qemu_artifacts() {
 	create_cache_asset "${qemu_tarball_name}" "${current_qemu_version}-${qemu_sha}" "${current_qemu_image}"
 }
 
+cache_stratovirt_artifacts() {
+	local stratovirt_tarball_name="kata-static-stratovirt.tar.xz"
+	local current_fc_version="$(get_from_kata_deps "assets.hypervisor.stratovirt.version")"
+	create_cache_asset "${stratovirt_tarball_name}" "${current_stratovirt_version}" ""
+}
+
 cache_rootfs_artifacts() {
 	local osbuilder_last_commit="$(get_last_modification "${repo_root_dir}/tools/osbuilder")"
 	local guest_image_last_commit="$(get_last_modification "${repo_root_dir}/tools/packaging/guest-image")"
@@ -167,6 +173,7 @@ Usage: $0 "[options]"
 		-q 	QEMU cache
 			* Export QEMU_FLAVOUR="qemu | qemu-tdx-experimental | qemu-snp-experimental" for a specific build
 			  The default QEMU_FLAVOUR value is "qemu"
+		-S 	StratoVirt cache
 		-r 	RootFS cache
 			* Export ROOTFS_IMAGE_TYPE="image|initrd" for one of those two types
 			  The default ROOTFS_IMAGE_TYPE value is "image"
@@ -184,11 +191,12 @@ main() {
 	local nydus_component="${nydus_component:-}"
 	local ovmf_component="${ovmf_component:-}"
 	local qemu_component="${qemu_component:-}"
+	local stratovirt_component="${stratovirt_component:-}"
 	local rootfs_component="${rootfs_component:-}"
 	local shim_v2_component="${shim_v2_component:-}"
 	local virtiofsd_component="${virtiofsd_component:-}"
 	local OPTIND
-	while getopts ":cFknoqrsvh:" opt
+	while getopts ":cFknoqSrsvh:" opt
 	do
 		case "$opt" in
 		c)
@@ -208,6 +216,9 @@ main() {
 			;;
 		q)
 			qemu_component="1"
+			;;
+		S)
+			stratovirt_component="1"
 			;;
 		r)
 			rootfs_component="1"
@@ -237,6 +248,7 @@ main() {
 	[[ -z "${nydus_component}" ]] && \
 	[[ -z "${ovmf_component}" ]] && \
 	[[ -z "${qemu_component}" ]] && \
+	[[ -z "${stratovirt_component}" ]] && \
 	[[ -z "${rootfs_component}" ]] && \
 	[[ -z "${shim_v2_component}" ]] && \
 	[[ -z "${virtiofsd_component}" ]] && \
@@ -252,6 +264,7 @@ main() {
 	[ "${nydus_component}" == "1" ] && cache_nydus_artifacts
 	[ "${ovmf_component}" == "1" ] && cache_ovmf_artifacts
 	[ "${qemu_component}" == "1" ] && cache_qemu_artifacts
+	[ "${stratovirt_component}" == "1" ] && cache_stratovirt_artifacts
 	[ "${rootfs_component}" == "1" ] && cache_rootfs_artifacts
 	[ "${shim_v2_component}" == "1" ] && cache_shim_v2_artifacts
 	[ "${virtiofsd_component}" == "1" ] && cache_virtiofsd_artifacts

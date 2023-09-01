@@ -29,6 +29,7 @@ jobs:
           - kernel-dragonball-experimental
           - nydus
           - qemu
+          - stratovirt
           - rootfs-image
           - rootfs-initrd
           - shim-v2

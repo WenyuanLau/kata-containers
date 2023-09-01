@@ -39,6 +39,7 @@ jobs:
           - qemu
           - qemu-snp-experimental
           - qemu-tdx-experimental
+          - stratovirt
           - rootfs-image
           - rootfs-image-tdx
           - rootfs-initrd

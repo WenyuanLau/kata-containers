@@ -29,6 +29,7 @@ readonly kernel_builder="${static_build_dir}/kernel/build.sh"
 readonly ovmf_builder="${static_build_dir}/ovmf/build.sh"
 readonly qemu_builder="${static_build_dir}/qemu/build-static-qemu.sh"
 readonly qemu_experimental_builder="${static_build_dir}/qemu/build-static-qemu-experimental.sh"
+readonly stratovirt_builder="${static_build_dir}/stratovirt/build-static-stratovirt.sh"
 readonly shimv2_builder="${static_build_dir}/shim-v2/build.sh"
 readonly virtiofsd_builder="${static_build_dir}/virtiofsd/build.sh"
 readonly nydus_builder="${static_build_dir}/nydus/build.sh"
@@ -96,6 +97,7 @@ options:
 	qemu
 	qemu-snp-experimental
 	qemu-tdx-experimental
+	stratovirt
 	rootfs-image
 	rootfs-image-tdx
 	rootfs-initrd
@@ -493,6 +495,26 @@ install_clh_glibc() {
 	install_clh_helper "gnu" "${features}" "-glibc"
 }
 
+# Install static stratovirt asset
+install_stratovirt() {
+	local stratovirt_version=$(get_from_kata_deps "assets.hypervisor.stratovirt.version")
+
+	install_cached_tarball_component \
+		"stratovirt" \
+		"${jenkins_url}/job/kata-containers-main-stratovirt-$(uname -m)/${cached_artifacts_path}" \
+		"${stratovirt_version}" \
+		"" \
+		"${final_tarball_name}" \
+		"${final_tarball_path}" \
+		&& return 0
+
+	info "build static stratovirt"
+	"${stratovirt_builder}"
+	info "Install static stratovirt"
+	mkdir -p "${destdir}/opt/kata/bin/"
+	sudo install -D --owner root --group root --mode 0744 static-stratovirt/stratovirt "${destdir}/opt/kata/bin/stratovirt"
+}
+
 # Install static virtiofsd asset
 install_virtiofsd() {
 	install_cached_tarball_component \
@@ -630,6 +652,7 @@ handle_build() {
 		install_qemu
 		install_qemu_snp_experimental
 		install_qemu_tdx_experimental
+		install_stratovirt
 		install_shimv2
 		install_tdvf
 		install_virtiofsd
@@ -666,6 +689,8 @@ handle_build() {
 	qemu-snp-experimental) install_qemu_snp_experimental ;;
 
 	qemu-tdx-experimental) install_qemu_tdx_experimental ;;
+
+	stratovirt) install_stratovirt ;;
 
 	rootfs-image) install_image ;;
 
@@ -717,6 +742,7 @@ main() {
 		kernel-experimental
 		nydus
 		qemu
+		stratovirt
 		rootfs-image
 		rootfs-initrd
 		rootfs-initrd-mariner
