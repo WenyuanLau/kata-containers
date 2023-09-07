@@ -50,6 +50,7 @@ const (
 	apiSocket                                     = "qmp.socket"
 	debugSocket                                   = "console.socket"
 	virtiofsSocket                                = "virtiofs_kata.socket"
+	nydusdSock                                    = "nydusd_kata.socket"
 	mmioBlkCount                                  = 4
 	MachineTypeMicrovm                            = "microvm"
 	MmioBus                          VirtioDriver = "mmio"
@@ -327,15 +328,16 @@ type State struct {
 }
 
 type stratovirt struct {
-	id           string
-	path         string
-	ctx          context.Context
-	fds          []*os.File
-	config       HypervisorConfig
-	qmpMonitorCh qmpChannel
-	svConfig     StratovirtConfig
-	state        State
-	stopped      int32
+	id             string
+	path           string
+	ctx            context.Context
+	fds            []*os.File
+	config         HypervisorConfig
+	qmpMonitorCh   qmpChannel
+	svConfig       StratovirtConfig
+	state          State
+	stopped        int32
+	virtiofsDaemon VirtiofsDaemon
 }
 
 func (s *stratovirt) getKernelParams(machineType string, initrdPath string) (string, error) {
@@ -397,6 +399,14 @@ func (s *stratovirt) Logger() *logrus.Entry {
 
 func (s *stratovirt) consoleSocketPath(id string) (string, error) {
 	return utils.BuildSocketPath(s.config.VMStorePath, id, debugSocket)
+}
+
+func (s *stratovirt) virtiofsSocketPath(id string) (string, error) {
+	return utils.BuildSocketPath(s.config.VMStorePath, id, virtiofsSocket)
+}
+
+func (s *stratovirt) nydusdSocketPath(id string) (string, error) {
+	return utils.BuildSocketPath(s.config.VMStorePath, id, nydusdSock)
 }
 
 func (s *stratovirt) qmpSetup() error {
@@ -540,7 +550,7 @@ func (s *stratovirt) appendNetwork(ctx context.Context, devices []VirtioDev, end
 }
 
 func (s *stratovirt) appendVirtioFs(ctx context.Context, devices []VirtioDev, volume types.Volume) []VirtioDev {
-	if s.config.SharedFS != config.VirtioFS {
+	if s.config.SharedFS != config.VirtioFS && s.config.SharedFS != config.VirtioFSNydus {
 		return devices
 	}
 	name := "virtio_fs"
@@ -619,32 +629,41 @@ func (s *stratovirt) setVMConfig(id string, hypervisorConfig *HypervisorConfig) 
 	return nil
 }
 
-// Virtio fs daemon is a shared file system that lets VM access a directory
-// tree on the host.
-func (s *stratovirt) setupVirtioFs() error {
-	if s.config.SharedFS != config.VirtioFS {
+func (s *stratovirt) setupVirtiofsDaemon(ctx context.Context) (err error) {
+	if s.config.SharedFS == config.NoSharedFS {
 		return nil
 	}
 
-	if _, err := os.Stat(s.config.VirtioFSDaemon); os.IsNotExist(err) {
-		return fmt.Errorf("virtiofsd path (%s) does not exist", s.config.VirtioFSDaemon)
+	if s.virtiofsDaemon == nil {
+		return errors.New("No stratovirt virtiofsDaemon configuration")
 	}
 
-	args := []string{
-		"-socket-path", filepath.Join(s.svConfig.vmPath, virtiofsSocket),
-		"-source", GetSharePath(s.id)}
-	if len(s.config.VirtioFSExtraArgs) != 0 {
-		args = append(args, s.config.VirtioFSExtraArgs...)
+	s.Logger().Info("Starting virtiofsDaemon")
+
+	pid, err := s.virtiofsDaemon.Start(ctx, func() {
+		s.StopVM(ctx, false)
+	})
+	if err != nil {
+		return err
+	}
+	s.state.virtiofsPid = pid
+
+	return nil
+}
+
+func (s *stratovirt) stopVirtiofsDaemon(ctx context.Context) (err error) {
+	if s.state.virtiofsPid == 0 {
+		s.Logger().Warn("The virtiofsd had stopped")
+		return nil
 	}
 
-	cmd := exec.Command(s.config.VirtioFSDaemon, args...)
-	s.Logger().Info("Virtiofsd start with cmd: ", cmd)
-
-	if err := cmd.Start(); err != nil {
-		return fmt.Errorf("failed to start virtiofsd: %v", cmd)
+	err = s.virtiofsDaemon.Stop(ctx)
+	if err != nil {
+		return err
 	}
 
-	s.state.virtiofsPid = cmd.Process.Pid
+	s.state.virtiofsPid = 0
+
 	return nil
 }
 
@@ -751,7 +770,7 @@ func (s *stratovirt) createParams(params *[]string) {
 	*params = append(*params, "-D")
 	*params = append(*params, "-disable-seccomp")
 
-	if s.config.SharedFS == config.VirtioFS {
+	if s.config.SharedFS == config.VirtioFS || s.config.SharedFS == config.VirtioFSNydus {
 		*params = append(*params, "-machine", fmt.Sprintf("type=%s,dump-guest-core=off,mem-share=on", s.svConfig.machineType))
 	} else {
 		*params = append(*params, "-machine", fmt.Sprintf("type=%s,dump-guest-core=off", s.svConfig.machineType))
@@ -900,6 +919,40 @@ func (s *stratovirt) hotplugBlk(ctx context.Context, drive *config.BlockDrive, o
 	return nil
 }
 
+func (s *stratovirt) createVirtiofsDaemon(sharedPath string) (VirtiofsDaemon, error) {
+	virtiofsdSocketPath, err := s.virtiofsSocketPath(s.id)
+	if err != nil {
+		return nil, err
+	}
+
+	if s.config.SharedFS == config.VirtioFSNydus {
+		apiSockPath, err := s.nydusdSocketPath(s.id)
+		if err != nil {
+			return nil, err
+		}
+		nd := &nydusd{
+			path:        s.config.VirtioFSDaemon,
+			sockPath:    virtiofsdSocketPath,
+			apiSockPath: apiSockPath,
+			sourcePath:  sharedPath,
+			debug:       s.config.Debug,
+			extraArgs:   s.config.VirtioFSExtraArgs,
+			startFn:     startInShimNS,
+		}
+		nd.setupShareDirFn = nd.setupPassthroughFS
+		return nd, nil
+	}
+
+	// default use virtiofsd
+	return &virtiofsd{
+		path:       s.config.VirtioFSDaemon,
+		sourcePath: sharedPath,
+		socketPath: virtiofsdSocketPath,
+		extraArgs:  s.config.VirtioFSExtraArgs,
+		cache:      s.config.VirtioFSCache,
+	}, nil
+}
+
 func (s *stratovirt) CreateVM(ctx context.Context, id string, network Network, hypervisorConfig *HypervisorConfig) error {
 	span, _ := katatrace.Trace(ctx, s.Logger(), "CreateVM", stratovirtTracingTags, map[string]string{"sandbox_id": s.id})
 	defer span.End()
@@ -913,6 +966,8 @@ func (s *stratovirt) CreateVM(ctx context.Context, id string, network Network, h
 	if s.path, err = s.binPath(); err != nil {
 		return err
 	}
+
+	s.virtiofsDaemon, err = s.createVirtiofsDaemon(hypervisorConfig.SharedPath)
 
 	return nil
 }
@@ -937,7 +992,7 @@ func launchStratovirt(ctx context.Context, s *stratovirt) (*exec.Cmd, io.ReadClo
 		s.Logger().Error("Unable to connect stdout to a pipe")
 		return nil, nil, err
 	}
-	s.Logger().Infof("lauching %s with: %v", s.path, params)
+	s.Logger().Infof("launching %s with: %v", s.path, params)
 
 	if err := cmd.Start(); err != nil {
 		s.Logger().Error("Error starting hypervisor, please check the params")
@@ -970,9 +1025,16 @@ func (s *stratovirt) StartVM(ctx context.Context, timeout int) error {
 		s.fds = []*os.File{}
 	}()
 
-	if err = s.setupVirtioFs(); err != nil {
+	if err = s.setupVirtiofsDaemon(ctx); err != nil {
 		return err
 	}
+	defer func() {
+		if err != nil {
+			if shutdownErr := s.stopVirtiofsDaemon(ctx); shutdownErr != nil {
+				s.Logger().WithError(shutdownErr).Warn("Error shutting down the VirtiofsDaemon")
+			}
+		}
+	}()
 
 	stratovirtCmd, reader, err := launchStratovirt(ctx, s)
 	if err != nil {
@@ -1024,6 +1086,12 @@ func (s *stratovirt) StopVM(ctx context.Context, waitOnly bool) (err error) {
 		err := s.qmpMonitorCh.qmp.ExecuteQuit(s.qmpMonitorCh.ctx)
 		if err != nil {
 			s.Logger().WithError(err).Error("Failed to execute qmp QUIT")
+			return err
+		}
+	}
+
+	if s.config.SharedFS == config.VirtioFS || s.config.SharedFS == config.VirtioFSNydus {
+		if err := s.stopVirtiofsDaemon(ctx); err != nil {
 			return err
 		}
 	}

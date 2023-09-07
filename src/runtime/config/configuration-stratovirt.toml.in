@@ -114,15 +114,44 @@ disable_block_device_use = @DEFDISABLEBLOCK@
 
 # Shared file system type:
 #   - virtio-fs (default)
+#   - virtio-fs-nydus
 #   - none
-shared_fs = "virtio-fs"
+shared_fs = "@DEFSHAREDFS_STRATOVIRT_VIRTIOFS@"
 
 # Path to vhost-user-fs daemon.
-virtio_fs_daemon = "/usr/bin/vhost_user_fs"
+virtio_fs_daemon = "@DEFVIRTIOFSDAEMON@"
 
 # List of valid annotations values for the virtiofs daemon
 # The default if not set is empty (all annotations rejected.)
-valid_virtio_fs_daemon_paths = ["/usr/bin/vhost_user_fs"]
+valid_virtio_fs_daemon_paths = @DEFVALIDVIRTIOFSDAEMONPATHS@
+
+# Default size of DAX cache in MiB
+virtio_fs_cache_size = @DEFVIRTIOFSCACHESIZE@
+
+# Extra args for virtiofsd daemon
+#
+# Format example:
+#   ["--arg1=xxx", "--arg2=yyy"]
+# Examples:
+#   Set virtiofsd log level to debug : ["--log-level=debug"]
+#
+# see `virtiofsd -h` for possible options.
+virtio_fs_extra_args = @DEFVIRTIOFSEXTRAARGS@
+
+# Cache mode:
+#
+#  - never
+#    Metadata, data, and pathname lookup are not cached in guest. They are
+#    always fetched from host and any changes are immediately pushed to host.
+#
+#  - auto
+#    Metadata and pathname lookup cache expires after a configured amount of
+#    time (default is 1 second). Data is cached while the file is open (close
+#    to open consistency).
+#
+#  - always
+#    Metadata, data, and pathname lookup are cached in guest and never expire.
+virtio_fs_cache = "@DEFVIRTIOFSCACHE@"
 
 # Block storage driver to be used for the hypervisor in case the container
 # rootfs is backed by a block device. This is virtio-scsi, virtio-blk

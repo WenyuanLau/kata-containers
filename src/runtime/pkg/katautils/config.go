@@ -1171,12 +1171,12 @@ func newStratovirtHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		return vc.HypervisorConfig{}, err
 	}
 
-	if sharedFS == config.VirtioFSNydus {
+	if sharedFS != config.VirtioFS && sharedFS != config.VirtioFSNydus && sharedFS != config.NoSharedFS {
 		return vc.HypervisorConfig{},
 			fmt.Errorf("Stratovirt Hypervisor does not support %s shared filesystem option", sharedFS)
 	}
 
-	if sharedFS == config.VirtioFS && h.VirtioFSDaemon == "" {
+	if (sharedFS == config.VirtioFS || sharedFS == config.VirtioFSNydus) && h.VirtioFSDaemon == "" {
 		return vc.HypervisorConfig{},
 			fmt.Errorf("cannot enable %s without daemon path in configuration file", sharedFS)
 	}
@@ -1202,6 +1202,9 @@ func newStratovirtHypervisorConfig(h hypervisor) (vc.HypervisorConfig, error) {
 		SharedFS:              sharedFS,
 		VirtioFSDaemon:        h.VirtioFSDaemon,
 		VirtioFSDaemonList:    h.VirtioFSDaemonList,
+		VirtioFSCacheSize:     h.VirtioFSCacheSize,
+		VirtioFSCache:         h.defaultVirtioFSCache(),
+		VirtioFSExtraArgs:     h.VirtioFSExtraArgs,
 		HugePages:             h.HugePages,
 		Debug:                 h.Debug,
 		DisableNestingChecks:  h.DisableNestingChecks,
