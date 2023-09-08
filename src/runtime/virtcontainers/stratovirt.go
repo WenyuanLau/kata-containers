@@ -1058,6 +1058,7 @@ func (s *stratovirt) StopVM(ctx context.Context, waitOnly bool) (err error) {
 	s.Logger().Info("Stopping Sandbox")
 	if atomic.LoadInt32(&s.stopped) != 0 {
 		s.Logger().Info("Already stopped")
+		return nil
 	}
 
 	defer func() {
@@ -1071,21 +1072,21 @@ func (s *stratovirt) StopVM(ctx context.Context, waitOnly bool) (err error) {
 		return err
 	}
 
-	if waitOnly {
-		pids := s.GetPids()
-		if len(pids) == 0 {
-			return errors.New("cannot determine StratoVirt PID")
-		}
+	pids := s.GetPids()
+	if len(pids) == 0 {
+		return errors.New("cannot determine StratoVirt PID")
+	}
+	pid := pids[0]
 
-		pid := pids[0]
+	if waitOnly {
 		err := utils.WaitLocalProcess(pid, stratovirtStopSandboxTimeoutSecs, syscall.Signal(0), s.Logger())
 		if err != nil {
 			return err
 		}
 	} else {
-		err := s.qmpMonitorCh.qmp.ExecuteQuit(s.qmpMonitorCh.ctx)
+		err = syscall.Kill(pid, syscall.SIGKILL)
 		if err != nil {
-			s.Logger().WithError(err).Error("Failed to execute qmp QUIT")
+			s.Logger().WithError(err).Error("Failed to send SIGKILL to stratovirt")
 			return err
 		}
 	}
