@@ -26,7 +26,7 @@ stratovirt_version="${stratovirt_version:-}"
 [ -n "$stratovirt_version" ] || die "failed to get stratovirt version"
 
 pull_stratovirt_released_binary() {
-	file_name="stratovirt-static-v${stratovirt_version}-${ARCH}"
+	file_name="stratovirt-static-amd64"
 	download_url="${stratovirt_url}/releases/download/${stratovirt_version}/${file_name}.tar.gz"
 
 	curl -L ${download_url} -o ${file_name}.tar.gz
