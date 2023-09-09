@@ -27,14 +27,14 @@ do
 	tar -xvf "${c}" -C "${tarball_content_dir}"
 done
 
-pushd ${tarball_content_dir}
-	shim="containerd-shim-kata-v2"
-	shim_path=$(find . -name ${shim} | sort | head -1)
-	prefix=${shim_path%"bin/${shim}"}
+# pushd ${tarball_content_dir}
+# 	shim="containerd-shim-kata-v2"
+# 	shim_path=$(find . -name ${shim} | sort | head -1)
+# 	prefix=${shim_path%"bin/${shim}"}
 
-# echo "$(git describe)" > ${prefix}/VERSION
-	[[ -n "${kata_versions_yaml_file}" ]] && cp ${kata_versions_yaml_file_path} ${prefix}/
-popd
+# # echo "$(git describe)" > ${prefix}/VERSION
+# # [[ -n "${kata_versions_yaml_file}" ]] && cp ${kata_versions_yaml_file_path} ${prefix}/
+# popd
 
 echo "create ${tar_path}"
 (cd "${tarball_content_dir}"; tar cvfJ "${tar_path}" .)
