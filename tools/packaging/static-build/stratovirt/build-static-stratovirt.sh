@@ -30,9 +30,8 @@ pull_stratovirt_released_binary() {
 	download_url="${stratovirt_url}/releases/download/${stratovirt_version}/${file_name}.tar.gz"
 
 	curl -L ${download_url} -o ${file_name}.tar.gz
-	tar zxvf ${file_name}.tar.gz
 	mkdir -p static-stratovirt
-	cp ${file_name}/stratovirt static-stratovirt/stratovirt
+	tar zxvf ${file_name}.tar.gz -C static-stratovirt
 }
 
 pull_stratovirt_released_binary
