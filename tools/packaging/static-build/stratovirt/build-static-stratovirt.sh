@@ -25,23 +25,14 @@ stratovirt_version="${stratovirt_version:-}"
 [ -n "$stratovirt_version" ] || stratovirt_version=$(get_from_kata_deps "assets.hypervisor.stratovirt.version")
 [ -n "$stratovirt_version" ] || die "failed to get stratovirt version"
 
-build_stratovirt_from_release_source() {
-	stratovirt_tarball_name=stratovirt-${stratovirt_version}.tar.gz
-	stratovirt_tarball_url="${stratovirt_url}/releases/tag/v${stratovirt_version}/${stratovirt_tarball_name}"
-	
-	info "Download ${stratovirt_tarball_url}, version: v${stratovirt_version}"
-	curl -L ${stratovirt_tarball_url} -o ${stratovirt_tarball_name}
-	tar zxvf ${stratovirt_tarball_name}
+pull_stratovirt_released_binary() {
+	file_name="stratovirt-static-${stratovirt_version##*v}-${ARCH}"
+	download_url="${stratovirt_url}/releases/download/${stratovirt_version}/${file_name}.tar.gz"
 
-	pushd stratovirt-${stratovirt_version}
-	tools/build_stratovirt/build-stratovirt-from-docker.sh kata_stratovirt_build
-	popd
-
+	curl -L ${download_url} -o ${file_name}.tar.gz
 	mkdir -p static-stratovirt
-	cp stratovirt-${stratovirt_version}/target/${ARCH}-unknown-linux-musl/release/stratovirt static-stratovirt/stratovirt
-	rm -rf stratovirt stratovirt.tar.gz
+	tar zxvf ${file_name}.tar.gz -C static-stratovirt
 }
 
-info "Build StratoVirt from release source."
-build_stratovirt_from_release_source
+pull_stratovirt_released_binary
 

@@ -117,8 +117,8 @@ assets:
 
     stratovirt:
       description: "StratoVirt is an lightweight opensource VMM"
-      url: "https://gitee.com/openeuler/stratovirt"
-      version: "2.2.0"
+      url: "https://github.com/openeuler-mirror/stratovirt"
+      version: "v2.2.0"
 
   image:
     description: |
