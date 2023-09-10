@@ -12,7 +12,6 @@ ARCH=$(uname -m)
 
 # Currently, StratoVirt only support x86_64 and aarch64.
 [ "${ARCH}" != "x86_64" ] && [ "${ARCH}" != "aarch64" ] && exit
-if [ "${ARCH}" == "x86_64" ]; then "${ARCH}" = "amd64"; fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/../../scripts/lib.sh"
