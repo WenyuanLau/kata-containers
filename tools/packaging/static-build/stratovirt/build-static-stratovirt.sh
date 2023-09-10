@@ -12,6 +12,7 @@ ARCH=$(uname -m)
 
 # Currently, StratoVirt only support x86_64 and aarch64.
 [ "${ARCH}" != "x86_64" ] && [ "${ARCH}" != "aarch64" ] && exit
+if [ "${ARCH}" == "x86_64" ]; then "${ARCH}" = "amd64"; fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${script_dir}/../../scripts/lib.sh"
@@ -26,7 +27,7 @@ stratovirt_version="${stratovirt_version:-}"
 [ -n "$stratovirt_version" ] || die "failed to get stratovirt version"
 
 pull_stratovirt_released_binary() {
-	file_name="stratovirt-static-amd64"
+ 	file_name="stratovirt-static-${stratovirt_version}-${ARCH}"
 	download_url="${stratovirt_url}/releases/download/${stratovirt_version}/${file_name}.tar.gz"
 
 	curl -L ${download_url} -o ${file_name}.tar.gz
