@@ -117,8 +117,8 @@ assets:
 
     stratovirt:
       description: "StratoVirt is an lightweight opensource VMM"
-      url: "https://github.com/WenyuanLau/stratovirt/"
-      version: "vv8.1.4"
+      url: "https://github.com/WenyuanLau/stratovirt-gitee"
+      version: "v9.0.1"
 
   image:
     description: |
