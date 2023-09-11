@@ -8,7 +8,7 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-ARCH="aarch64"
+ARCH=${uname -m}
 
 # Currently, StratoVirt only support x86_64 and aarch64.
 [ "${ARCH}" != "x86_64" ] && [ "${ARCH}" != "aarch64" ] && exit
