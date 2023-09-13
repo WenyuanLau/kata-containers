@@ -29,3 +29,6 @@ test-qemu: build
 
 test-clh: build
 	make -C $(MKFILE_DIR)/cmd/fiotest/ run-clh
+
+test-stratovirt: build
+	make -C $(MKFILE_DIR)/cmd/fiotest/ run-stratovirt

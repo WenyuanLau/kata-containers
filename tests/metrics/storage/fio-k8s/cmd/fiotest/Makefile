@@ -25,3 +25,6 @@ run-qemu: build
 
 run-clh: build
 	$(MKFILE_DIR)/fio-k8s --debug --fio.size 10M --output-dir test-results --test-name kata --container-runtime kata-clh $(MKFILE_DIR)/../../configs/example-config/
+
+run-stratovirt: build
+	$(MKFILE_DIR)/fio-k8s --debug --fio.size 10M --output-dir test-results --test-name kata --container-runtime kata-stratovirt $(MKFILE_DIR)/../../configs/example-config/

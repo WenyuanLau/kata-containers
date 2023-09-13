@@ -20,7 +20,7 @@ function main() {
 
 	pushd "${FIO_PATH}"
 		[ -z "${KATA_HYPERVISOR}" ] && die "Hypervisor ID is missing."
-		[ "${KATA_HYPERVISOR}" != "qemu" ] && [ "${KATA_HYPERVISOR}" != "clh" ] && die "Hypervisor not recognized: ${KATA_HYPERVISOR}"
+		[ "${KATA_HYPERVISOR}" != "qemu" ] && [ "${KATA_HYPERVISOR}" != "clh" ] && [ "${KATA_HYPERVISOR}" != "stratovirt" ] && die "Hypervisor not recognized: ${KATA_HYPERVISOR}"
 
 		echo "INFO: Running K8S FIO test using ${KATA_HYPERVISOR} hypervisor"
 		make "test-${KATA_HYPERVISOR}"
