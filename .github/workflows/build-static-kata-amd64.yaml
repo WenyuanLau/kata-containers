@@ -9,6 +9,7 @@ jobs:
       matrix:
         asset:
           - stratovirt
+          - cloud-hypervisor
           - virtiofsd
     
     steps:
