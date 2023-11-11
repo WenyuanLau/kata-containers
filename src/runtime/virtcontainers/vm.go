@@ -147,13 +147,19 @@ func NewVM(ctx context.Context, config VMConfig) (*VM, error) {
 	}()
 
 	// 4. Check agent aliveness
-	// VMs booted from template are paused, do not Check
-	if !config.HypervisorConfig.BootFromTemplate {
+	// On hypervisor StratoVirt, VMs booted from template are running, check agent
+	// On other hypervisors, VMs booted from template are paused, do not check
+	if config.HypervisorType == StratovirtHypervisor {
+		if !config.HypervisorConfig.BootToBeTemplate {
+			virtLog.WithField("vm", id).Info("check agent status")
+			err = agent.check(ctx)
+		}
+	} else if !config.HypervisorConfig.BootFromTemplate {
 		virtLog.WithField("vm", id).Info("Check agent status")
 		err = agent.check(ctx)
-		if err != nil {
-			return nil, err
-		}
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	return &VM{
@@ -363,6 +369,7 @@ func (v *VM) assignSandbox(s *Sandbox) error {
 
 	s.hypervisor = v.hypervisor
 	s.config.HypervisorConfig.VMid = v.id
+	s.config.HypervisorConfig.BootFromTemplate = true
 
 	return nil
 }

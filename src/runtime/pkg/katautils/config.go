@@ -1865,7 +1865,7 @@ func checkNetNsConfig(config oci.RuntimeConfig) error {
 // checkFactoryConfig ensures the VM factory configuration is valid.
 func checkFactoryConfig(config oci.RuntimeConfig) error {
 	if config.FactoryConfig.Template {
-		if config.HypervisorConfig.InitrdPath == "" {
+		if config.HypervisorConfig.InitrdPath == "" && (config.HypervisorType != vc.StratovirtHypervisor) {
 			return errors.New("Factory option enable_template requires an initrd image")
 		}
 	}

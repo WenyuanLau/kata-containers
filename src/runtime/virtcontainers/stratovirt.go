@@ -289,6 +289,7 @@ type StratovirtConfig struct {
 	smp           uint32
 	memory        uint64
 	kernelPath    string
+	templatePath  string
 	params        string
 	rootfsPath    string
 	initrdPath    string
@@ -625,6 +626,16 @@ func (s *stratovirt) setVMConfig(id string, hypervisorConfig *HypervisorConfig) 
 		fsSockPath:    filepath.Join(vmPath, virtiofsSocket),
 	}
 
+	// With the current implementations, VM templating will not work with virtiofs.
+	if s.config.SharedFS == config.VirtioFS || s.config.SharedFS == config.VirtioFSNydus {
+		if (s.config.BootToBeTemplate || s.config.BootFromTemplate) {
+			return errors.New("VM templating has been enabled with virtiofs and this configuration will not work")
+		}
+	}
+
+	if s.config.BootFromTemplate || s.config.BootToBeTemplate {
+		s.svConfig.templatePath = strings.Replace(s.config.DevicesStatePath, "/state", "", -1)
+	}
 	s.svConfig.devices = s.createDevices()
 
 	return nil
@@ -779,6 +790,11 @@ func (s *stratovirt) createParams(params *[]string) {
 
 	if s.svConfig.initrdPath != "" {
 		*params = append(*params, "-initrd", s.svConfig.initrdPath)
+	}
+
+	// handle boot from template
+	if s.config.BootFromTemplate {
+		*params = append(*params, "-incoming", fmt.Sprintf("file:%s", s.svConfig.templatePath))
 	}
 
 	for _, d := range s.svConfig.devices {
@@ -1105,14 +1121,55 @@ func (s *stratovirt) StopVM(ctx context.Context, waitOnly bool) (err error) {
 }
 
 func (s *stratovirt) PauseVM(ctx context.Context) error {
-	return nil
+	span, _ := katatrace.Trace(ctx, s.Logger(), "PauseVM", stratovirtTracingTags, map[string]string{"sandbox_id": s.id})
+	defer span.End()
+
+	return s.togglePauseVM(ctx, true)
 }
 
 func (s *stratovirt) SaveVM() error {
+	s.Logger().Info("SaveVM")
+
+	err := s.qmpSetup()
+	if err != nil {
+		return err
+	}
+
+	// BootToBeTemplate sets the VM to be a template that other VMs can can clone from.
+	// We would want to bypass shared memory when saving VM to local file through migrate.
+	if s.config.BootToBeTemplate {
+		err = s.qmpMonitorCh.qmp.ExecSetMigrateArguments(s.qmpMonitorCh.ctx, fmt.Sprintf("file:%s", s.svConfig.templatePath))
+		if err != nil {
+			s.Logger().WithError(err).Error("exec migration")
+			return err
+		}
+	}
+
 	return nil
 }
 
 func (s *stratovirt) ResumeVM(ctx context.Context) error {
+	span, _ := katatrace.Trace(ctx, s.Logger(), "ResumeVM", stratovirtTracingTags, map[string]string{"sandbox_id": s.id})
+	defer span.End()
+
+	return s.togglePauseVM(ctx, false)
+}
+
+func (s *stratovirt) togglePauseVM(ctx context.Context, pause bool) error {
+	span, _ := katatrace.Trace(ctx, s.Logger(), "togglePauseVM", stratovirtTracingTags, map[string]string{"sandbox_id": s.id})
+	defer span.End()
+
+	err := s.qmpSetup()
+	if err != nil {
+		return err
+	}
+
+	if pause {
+		s.qmpMonitorCh.qmp.ExecuteStop(s.qmpMonitorCh.ctx)
+	} else {
+		s.qmpMonitorCh.qmp.ExecuteCont(s.qmpMonitorCh.ctx)
+	}
+
 	return nil
 }
 

@@ -102,11 +102,14 @@ func (t *template) prepareTemplateFiles() error {
 	if err != nil {
 		return err
 	}
-	flags := uintptr(syscall.MS_NOSUID | syscall.MS_NODEV)
-	opts := fmt.Sprintf("size=%dM", t.config.HypervisorConfig.MemorySize+templateDeviceStateSize)
-	if err = syscall.Mount("tmpfs", t.statePath, "tmpfs", flags, opts); err != nil {
-		t.close()
-		return err
+	// If use hypervisor stratovirt, no need to create template path with ramdisk.
+	if t.config.HypervisorType != vc.StratovirtHypervisor {
+		flags := uintptr(syscall.MS_NOSUID | syscall.MS_NODEV)
+		opts := fmt.Sprintf("size=%dM", t.config.HypervisorConfig.MemorySize+templateDeviceStateSize)
+		if err = syscall.Mount("tmpfs", t.statePath, "tmpfs", flags, opts); err != nil {
+			t.close()
+			return err
+		}
 	}
 	f, err := os.Create(t.statePath + "/memory")
 	if err != nil {
@@ -132,8 +135,11 @@ func (t *template) createTemplateVM(ctx context.Context) error {
 	}
 	defer vm.Stop(ctx)
 
-	if err = vm.Disconnect(ctx); err != nil {
-		return err
+	// Create template on hypervisor stratovirt, don't have connection with agent.
+	if config.HypervisorType != vc.StratovirtHypervisor {
+		if err = vm.Disconnect(ctx); err != nil {
+			return err
+		}
 	}
 
 	// Sleep a bit to let the agent grpc server clean up

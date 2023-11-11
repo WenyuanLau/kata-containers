@@ -536,8 +536,11 @@ func (f *FilesystemShare) ShareRootFilesystem(ctx context.Context, c *Container)
 		// TODO: remove dependency on shared fs path. shared fs is just one kind of storage source.
 		// we should not always use shared fs path for all kinds of storage. Instead, all storage
 		// should be bind mounted to a tmpfs path for containers to use.
-		if err := os.MkdirAll(filepath.Join(getMountPath(f.sandbox.ID()), c.id, c.rootfsSuffix), DirMode); err != nil {
-			return nil, err
+		// If boot from template on stratovirt, no need to mkdir mount path.
+		if !((f.sandbox.config.HypervisorType == StratovirtHypervisor) && f.sandbox.config.HypervisorConfig.BootFromTemplate) {
+			if err := os.MkdirAll(filepath.Join(getMountPath(f.sandbox.ID()), c.id, c.rootfsSuffix), DirMode); err != nil {
+				return nil, err
+			}
 		}
 
 		return &SharedFile{

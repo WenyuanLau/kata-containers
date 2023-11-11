@@ -246,10 +246,13 @@ disable_guest_selinux = @DEFDISABLEGUESTSELINUX@
 #
 # When disabled, new VMs are created from scratch.
 #
-# Note: Requires "initrd=" to be set ("image=" is not supported).
-#
 # Default false
 #enable_template = true
+
+# Specifies the path of template.
+#
+# Default "/run/vc/vm/template"
+#template_path = "/run/vc/vm/template"
 
 [agent.@PROJECT_TYPE@]
 # If enabled, make the agent display debug-level messages.
