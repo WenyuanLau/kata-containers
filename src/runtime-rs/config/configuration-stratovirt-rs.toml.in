@@ -33,8 +33,8 @@ enable_annotations = @DEFENABLEANNOTATIONS@
 # List of valid annotations values for the hypervisor
 # Each member of the list is a path pattern as described by glob(3).
 # The default if not set is empty (all annotations rejected.)
-# Your distribution recommends: @STRATOVIRT_VALIDHYPERVISORPATHS@
-valid_hypervisor_paths = @STRATOVIRT_VALIDHYPERVISORPATHS@
+# Your distribution recommends: @STRATOVIRTVALIDHYPERVISORPATHS@
+valid_hypervisor_paths = @STRATOVIRTVALIDHYPERVISORPATHS@
 
 # Optional space-separated list of options to pass to the guest kernel.
 # For example, use `kernel_params = "vsyscall=emulate"` if you are having
@@ -69,7 +69,7 @@ default_vcpus = @DEFVCPUS@
 # `default_maxvcpus = 8` the memory footprint will be small, but 8 will be the maximum number of
 # vCPUs supported by the SB/VM. In general, we recommend that you do not edit this variable,
 # unless you know what are you doing.
-default_maxvcpus = @DEFMAXVCPUS_STRATOVIRT@
+default_maxvcpus = @DEFMAXVCPUS@
 
 # Bridges can be used to hot plug devices.
 # Limitations:
@@ -135,7 +135,7 @@ block_device_driver = "@DEFBLOCKSTORAGEDRIVER_STRATOVIRT@"
 #   - virtio-fs
 #   - virtio-fs-nydus
 #   - none
-shared_fs = "@SHAREDFS_STRATOVIRT@"
+shared_fs = "@DEFSHAREDFS_STRATOVIRT_VIRTIOFS@"
 
 # Default size of DAX cache in MiB
 virtio_fs_cache_size = @DEFVIRTIOFSCACHESIZE@
@@ -259,7 +259,7 @@ dial_timeout = 45
 #     Uses tc filter rules to redirect traffic from the network interface
 #     provided by plugin to a tap interface connected to the VM.
 #
-internetworking_model="@DEFNETWORKMODEL_STRATOVIRT@"
+internetworking_model = "@DEFNETWORKMODEL_STRATOVIRT@"
 
 name = "@RUNTIMENAME@"
 hypervisor_name = "@HYPERVISOR_STRATOVIRT@"
@@ -312,7 +312,7 @@ experimental = @DEFAULTEXPFEATURES@
 
 # If enabled, user can run pprof tools with shim v2 process through kata-monitor.
 # (default: false)
-# enable_pprof = true
+#enable_pprof = true
 
 # If enabled, the runtime will attempt to determine appropriate sandbox size (memory, CPU) before booting the virtual machine. In
 # this case, the runtime will not dynamically update the amount of memory and CPU in the virtual machine. This is generally helpful

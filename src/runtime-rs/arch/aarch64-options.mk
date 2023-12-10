@@ -13,3 +13,6 @@ QEMUCMD := qemu-system-aarch64
 
 # dragonball binary name
 DBCMD := dragonball
+
+# stratovirt binary name
+STRATOVIRTCMD := stratovirt
