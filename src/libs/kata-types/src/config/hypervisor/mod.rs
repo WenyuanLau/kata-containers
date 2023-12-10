@@ -44,6 +44,9 @@ pub use self::qemu::{QemuConfig, HYPERVISOR_NAME_QEMU};
 mod ch;
 pub use self::ch::{CloudHypervisorConfig, HYPERVISOR_NAME_CH};
 
+mod stratovirt;
+pub use self::stratovirt::{StratoVirtConfig, HYPERVISOR_NAME_STRATOVIRT};
+
 /// Virtual PCI block device driver.
 pub const VIRTIO_BLK_PCI: &str = "virtio-blk-pci";
 

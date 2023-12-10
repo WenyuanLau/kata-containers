@@ -28,6 +28,11 @@ use hypervisor::{qemu::Qemu, HYPERVISOR_QEMU};
 use kata_types::config::DragonballConfig;
 use kata_types::config::{hypervisor::register_hypervisor_plugin, QemuConfig, TomlConfig};
 
+#[cfg(not(target_arch = "s390x"))]
+use hypervisor::stratovirt::StratoVirt;
+#[cfg(not(target_arch = "s390x"))]
+use kata_types::config::{hypervisor::HYPERVISOR_NAME_STRATOVIRT, StratoVirtConfig};
+
 #[cfg(all(feature = "cloud-hypervisor", not(target_arch = "s390x")))]
 use hypervisor::ch::CloudHypervisor;
 #[cfg(all(feature = "cloud-hypervisor", not(target_arch = "s390x")))]
@@ -65,6 +70,9 @@ impl RuntimeHandler for VirtContainer {
             let ch_config = Arc::new(CloudHypervisorConfig::new());
             register_hypervisor_plugin(HYPERVISOR_NAME_CH, ch_config);
         }
+
+        let stratovirt_config = Arc::new(StratoVirtConfig::new());
+        register_hypervisor_plugin(HYPERVISOR_NAME_STRATOVIRT, stratovirt_config);
 
         Ok(())
     }
@@ -169,6 +177,14 @@ async fn new_hypervisor(toml_config: &TomlConfig) -> Result<Arc<dyn Hypervisor>>
                 .set_hypervisor_config(hypervisor_config.clone())
                 .await;
 
+            Ok(Arc::new(hypervisor))
+        }
+
+        HYPERVISOR_NAME_STRATOVIRT => {
+            let mut hypervisor = StratoVirt::new();
+            hypervisor
+                .set_hypervisor_config(hypervisor_config.clone())
+                .await;
             Ok(Arc::new(hypervisor))
         }
         _ => Err(anyhow!("Unsupported hypervisor {}", &hypervisor_name)),

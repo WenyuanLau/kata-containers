@@ -88,3 +88,17 @@ pub const DEFAULT_CH_PCI_BRIDGES: u32 = 2;
 pub const MAX_CH_PCI_BRIDGES: u32 = 5;
 pub const MAX_CH_VCPUS: u32 = 256;
 pub const MIN_CH_MEMORY_SIZE_MB: u32 = 64;
+
+// Default configuration for StratoVirt
+pub const DEFAULT_STRATOVIRT_BINARY_PATH: &str = "/usr/bin/stratovirt";
+pub const DEFAULT_STRATOVIRT_ROOTFS_TYPE: &str = "ext4";
+pub const DEFAULT_STRATOVIRT_MACHINE_TYPE: &str = "microvm";
+pub const DEFAULT_STRATOVIRT_ENTROPY_SOURCE: &str = "/dev/urandom";
+pub const DEFAULT_STRATOVIRT_GUEST_KERNEL_IMAGE_AMD64: &str = "vmlinuz";
+pub const DEFAULT_STRATOVIRT_GUEST_KERNEL_IMAGE_AARCH64: &str = "vmlinux";
+pub const DEFAULT_STRATOVIRT_GUEST_KERNEL_PARAMS: &str = "";
+pub const DEFAULT_STRATOVIRT_FIRMWARE_PATH: &str = "";
+pub const DEFAULT_STRATOVIRT_MEMORY_SIZE_MB: u32 = 128;
+pub const DEFAULT_STRATOVIRT_MEMORY_SLOTS: u32 = 128;
+pub const MAX_STRATOVIRT_VCPUS: u32 = 256;
+pub const MIN_STRATOVIRT_MEMORY_SIZE_MB: u32 = 64;
